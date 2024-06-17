@@ -1,0 +1,20 @@
+yo hi my name is levi
+
+Commands for shell
+./untitled5
+create_file testfile.txt 100
+rename_file testfile.txt renamedfile.txt
+file_info renamedfile.txt
+file_info renamedfile.txt -d
+delete_file renamedfile.txt
+create_dir testdir
+dir_info testdir
+dir_info testdir -d
+rename_dir testdir levidir
+move_dir levidir moveddir
+duplicate_dir moveddir duplicateddir
+search_file duplicateddir filename.txt
+display_tree duplicateddir
+delete_dir duplicateddir
+delete_dir fundir
+

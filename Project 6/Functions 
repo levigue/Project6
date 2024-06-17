@@ -1,0 +1,229 @@
+ Create and Rename Directories
+
+
+void create_directory(const char* dirname) {
+    if (mkdir(dirname, 0755) == -1)
+        perror(RED "Failed to create directory" RESET);
+    else
+        printf("Created directory: %s\n", dirname);
+}
+
+void rename_directory(const char* oldname, const char* newname) {
+    if (rename(oldname, newname) == -1)
+        perror(RED "Failed to rename directory" RESET);
+    else
+        printf("Renamed directory: %s to %s\n", oldname, newname);
+}
+
+
+Delete Directories
+
+void delete_directory(const char* dirname) {
+    DIR* dir = opendir(dirname);
+    if (!dir) {
+        perror(RED "Failed to open directory" RESET);
+        return;
+    }
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        char path[PATH_MAX];
+        snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
+        if (entry->d_type == DT_DIR) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+                continue;
+            delete_directory(path);
+        } else
+            unlink(path);
+    }
+    closedir(dir);
+    if (rmdir(dirname) == -1)
+        perror(RED "Failed to delete directory" RESET);
+    else
+        printf("Deleted directory: %s\n", dirname);
+}
+
+
+Create, Rename, Edit, and Delete Files
+void create_file(const char* filename, int size) {
+    FILE* file = fopen(filename, "w");
+    if (!file) {
+        perror(RED "Failed to create file" RESET);
+        return;
+    }
+    if (size > 0) {
+        char* buffer = (char*)malloc(size);
+        if (!buffer) {
+            perror(RED "Failed to allocate memory" RESET);
+            fclose(file);
+            return;
+        }
+        for (int i = 0; i < size; i++)
+            buffer[i] = 'A' + (rand() % 26);  // Randomly generate data
+        fwrite(buffer, 1, size, file);
+        free(buffer);
+    }
+    fclose(file);
+    printf("Created file: %s with size: %d bytes\n", filename, size);
+}
+
+
+void rename_file(const char* oldname, const char* newname) {
+    if (rename(oldname, newname) == -1)
+        perror(RED "Failed to rename file" RESET);
+    else
+        printf("Renamed file: %s to %s\n", oldname, newname);
+}
+
+void delete_file(const char* filename) {
+    if (unlink(filename) == -1)
+        perror(RED "Failed to delete file" RESET);
+    else
+        printf("Deleted file: %s\n", filename);
+}
+
+
+Move Files Across Directories
+void move_file(const char* src, const char* dest) {
+    if (rename(src, dest) == -1)
+        perror(RED "Failed to move file" RESET);
+    else
+        printf("Moved file: %s to %s\n", src, dest);
+}
+
+
+Duplicate Files
+void duplicate_file(const char* src, const char* dest) {
+    FILE* src_file = fopen(src, "r");
+    if (!src_file) {
+        perror(RED "Failed to open source file" RESET);
+        return;
+    }
+    FILE* dest_file = fopen(dest, "w");
+    if (!dest_file) {
+        perror(RED "Failed to open destination file" RESET);
+        fclose(src_file);
+        return;
+    }
+    char buffer[4096]; size_t bytes;
+    while ((bytes = fread(buffer, 1, sizeof(buffer), src_file)) > 0)
+        fwrite(buffer, 1, bytes, dest_file);
+    fclose(src_file); fclose(dest_file);
+    printf("Duplicated file: %s to %s\n", src, dest);
+}
+
+
+Duplicate Directories
+void duplicate_directory(const char* src, const char* dest) {
+    DIR* dir = opendir(src);
+    if (!dir) {
+        perror(RED "Failed to open source directory" RESET);
+        return;
+    }
+    if (mkdir(dest, 0755) == -1) {
+        perror(RED "Failed to create destination directory" RESET);
+        closedir(dir);
+        return;
+    }
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        char src_path[PATH_MAX], dest_path[PATH_MAX];
+        snprintf(src_path, sizeof(src_path), "%s/%s", src, entry->d_name);
+        snprintf(dest_path, sizeof(dest_path), "%s/%s", dest, entry->d_name);
+        if (entry->d_type == DT_DIR) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+                continue;
+            duplicate_directory(src_path, dest_path);
+        } else
+            duplicate_file(src_path, dest_path);
+    }
+    closedir(dir);
+    printf("Duplicated directory: %s to %s\n", src, dest);
+}
+
+Search for a File in a Directory Tree
+void search_file(const char* dirname, const char* filename) {
+    DIR* dir = opendir(dirname);
+    if (!dir) {
+        perror(RED "Failed to open directory" RESET);
+        return;
+    }
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        char path[PATH_MAX];
+        snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
+        if (entry->d_type == DT_DIR) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+                continue;
+            search_file(path, filename);
+        } else if (strcmp(entry->d_name, filename) == 0) {
+            printf("Found file: %s\n", path);
+        }
+    }
+    closedir(dir);
+}
+
+Display a Directory Tree
+void display_directory_tree(const char* dirname, int depth) {
+    DIR* dir = opendir(dirname);
+    if (!dir) {
+        perror(RED "Failed to open directory" RESET);
+        return;
+    }
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        for (int i = 0; i < depth; i++)
+            printf("  ");
+        printf("|-- %s\n", entry->d_name);
+        if (entry->d_type == DT_DIR) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+                continue;
+            char path[PATH_MAX];
+            snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
+            display_directory_tree(path, depth + 1);
+        }
+    }
+    closedir(dir);
+}
+
+Get Basic Information About a File
+void get_file_info(const char* filename, int detailed) {
+    struct stat file_stat;
+    if (stat(filename, &file_stat) == -1) {
+        perror(RED "Failed to get file information" RESET);
+        return;
+    }
+    printf("File: %s\n", filename);
+    printf("Size: %lld bytes\n", (long long)file_stat.st_size);
+    printf("Permissions: %o\n", file_stat.st_mode & 0777);
+    printf("Last modified: %s", ctime(&file_stat.st_mtime));
+    if (detailed) {
+        printf("Device: %lld\n", (long long)file_stat.st_dev);
+        printf("Inode: %lld\n", (long long)file_stat.st_ino);
+        printf("Links: %lld\n", (long long)file_stat.st_nlink);
+        printf("UID: %d\n", file_stat.st_uid);
+        printf("GID: %d\n", file_stat.st_gid);
+    }
+}
+
+Get Basic Information About a Directory
+void get_directory_info(const char* dirname, int detailed) {
+    DIR* dir = opendir(dirname);
+    if (!dir) {
+        perror(RED "Failed to open directory" RESET);
+        return;
+    }
+    struct dirent* entry;
+    int total_files = 0, total_dirs = 0;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_DIR)
+            total_dirs++;
+        else
+            total_files++;
+    }
+    closedir(dir);
+    printf("Directory: %s\n", dirname);
+    printf("Total files: %d\n", total_files);
+    printf("Total directories: %d\n", total_dirs);
+    if (detailed)
+        display_directory_tree(dirname, 0);
+}
